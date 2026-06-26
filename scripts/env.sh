@@ -70,6 +70,8 @@ z2o_configure_paths() {
         Z2O_VAULT="$(z2o_path "$(pwd)" "$OBSIDIAN_VAULT")"
     else
         echo "❌ 未提供 vault_path，且 Z2O_VAULT / OBSIDIAN_VAULT 未设置" >&2
+        echo "   请运行: cp .env.example .env，然后在 .env 中设置 Z2O_VAULT" >&2
+        echo "   或临时传入 vault_path: ./scripts/paper.sh <citekey> /path/to/vault" >&2
         exit 1
     fi
 

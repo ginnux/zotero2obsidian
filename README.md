@@ -28,6 +28,7 @@ Read these papers: keyA2025, keyB2026
 - Extracts text and images into `.paper-cache/` and `assets/png/{citekey}/`
 - Generates a structured Chinese note at `papers/notes/{citekey}.md`
 - Supports `.env` configuration for vault and directory layout
+- Prefers MinerU precise parsing for text/elements when configured
 - Uses citekey for filenames, wikilinks, and frontmatter IDs
 - Auto-updates the paper index after notes are generated
 
@@ -81,6 +82,25 @@ Z2O_IMAGE_DIR="assets/png"
 
 Directory values may be relative to `Z2O_VAULT` or absolute. The scripts still support `OBSIDIAN_VAULT` for backward compatibility, and an explicit `vault_path` argument overrides `.env`.
 
+6. Optional: enable MinerU precise parsing:
+
+```bash
+Z2O_EXTRACTOR="auto"
+MINERU_API_TOKEN="your-token"
+MINERU_MODEL_VERSION="vlm"
+MINERU_LANGUAGE="ch"
+```
+
+With `Z2O_EXTRACTOR=auto`, `extract.sh` uses MinerU first when a token exists, then falls back to PyMuPDF if MinerU is unavailable. Use `Z2O_EXTRACTOR=mineru` to require MinerU, or `Z2O_EXTRACTOR=pymupdf` to force local extraction.
+
+7. Optional: choose the CLI note generator:
+
+```bash
+Z2O_NOTE_GENERATOR="local"
+```
+
+When unset, `summarize.sh` uses the deterministic local draft generator. The recommended skill workflow does not call another LLM command to write the formal note; the current Agent reads the extracted text and images and writes `papers/notes/{citekey}.md` directly. Legacy external generators (`codex`, `cc`, `claude`, `opencode`) are only used when explicitly set with `Z2O_NOTE_GENERATOR`.
+
 ## Zotero PDF Lookup
 
 The workflow calls Better BibTeX like this:
@@ -126,11 +146,21 @@ your-vault/
 
 ## Script Usage
 
-Run the full local pipeline:
+Recommended Agent skill flow:
+
+```bash
+./scripts/prepare.sh ouyang2026reasoningbank
+```
+
+`prepare.sh` only downloads the Zotero PDF and extracts text/images. The current skill Agent then reads `.paper-cache/{citekey}_text.md`, selects key figures from `assets/png/{citekey}/`, writes the formal note, and runs `./scripts/index.sh`.
+
+Run the full CLI fallback pipeline:
 
 ```bash
 ./scripts/paper.sh ouyang2026reasoningbank
 ```
+
+The CLI fallback generates a deterministic local draft note by default. It is useful for smoke tests and non-Agent use, but the skill-generated note is the higher-quality path.
 
 Or run each step:
 
@@ -160,7 +190,9 @@ zotero2obsidian/
 │       └── SKILL.md
 ├── scripts/
 │   ├── fetch_zotero_pdf.py
+│   ├── mineru_extract.py
 │   ├── env.sh
+│   ├── prepare.sh
 │   ├── download.sh
 │   ├── extract.sh
 │   ├── summarize.sh
@@ -212,6 +244,25 @@ Z2O_IMAGE_DIR="assets/png"
 
 这些目录可以写相对于 vault 的路径，也可以写绝对路径。`OBSIDIAN_VAULT` 仍然兼容；命令行传入的 `vault_path` 优先级最高。
 
+可选：启用 MinerU 精准识别：
+
+```bash
+Z2O_EXTRACTOR="auto"
+MINERU_API_TOKEN="你的MinerU token"
+MINERU_MODEL_VERSION="vlm"
+MINERU_LANGUAGE="ch"
+```
+
+`auto` 模式会在配置 token 后优先调用 MinerU 精准解析；未配置 token 或 MinerU 不可用时回退 PyMuPDF。本地强制模式可用 `Z2O_EXTRACTOR=pymupdf`，强制 MinerU 可用 `Z2O_EXTRACTOR=mineru`。
+
+可选：指定 CLI 草稿生成器：
+
+```bash
+Z2O_NOTE_GENERATOR="local"
+```
+
+不配置时，`summarize.sh` 只使用确定性的本地草稿生成器。推荐的 skill 流程不会再调用另一个 LLM 命令生成正式笔记；当前 Agent 会读取提取出的全文和图片，直接写入 `papers/notes/{citekey}.md`。历史兼容的外部生成器（`codex`、`cc`、`claude`、`opencode`）只有在显式设置 `Z2O_NOTE_GENERATOR` 时才会调用。
+
 如果 PyMuPDF 装在非默认解释器里，可以在 `.env` 中设置 `PYTHON=/path/to/python`。
 
 同时需要：
@@ -231,8 +282,11 @@ Z2O_IMAGE_DIR="assets/png"
 本地脚本也可以直接运行：
 
 ```bash
+./scripts/prepare.sh ouyang2026reasoningbank
 ./scripts/paper.sh ouyang2026reasoningbank
 ```
+
+`prepare.sh` 是 skill 推荐入口，只准备 PDF、全文和图片；随后由当前 Agent 写正式笔记并更新索引。`paper.sh` 是纯 CLI 兜底流程，默认只生成本地草稿。
 
 ### 目录结构
 

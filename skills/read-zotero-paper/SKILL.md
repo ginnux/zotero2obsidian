@@ -25,12 +25,17 @@ Z2O_SUMMARY_DIR="knowledge/Summary"
 Z2O_TEMP_DIR=".paper-cache"
 Z2O_PDF_DIR="assets/pdfs"
 Z2O_IMAGE_DIR="assets/png"
+Z2O_EXTRACTOR="auto"
 ```
 
 可选环境变量：
 
 - `BBT_JSON_RPC_URL`：如果 Better BibTeX JSON-RPC 地址不是默认值，使用该变量覆盖
 - `PYTHON`：如果 PyMuPDF 安装在非默认解释器里，设置为该 Python 路径
+- `MINERU_API_TOKEN`：配置后 `Z2O_EXTRACTOR=auto` 会优先使用 MinerU 精准识别
+- `MINERU_MODEL_VERSION`：默认 `vlm`
+- `MINERU_LANGUAGE`：默认 `ch`
+- `Z2O_NOTE_GENERATOR`：仅用于 CLI 草稿生成；不配置时为 `local`
 
 脚本优先级：命令行传入的 `vault_path` > `.env` 的 `Z2O_VAULT` > `OBSIDIAN_VAULT`。
 
@@ -66,6 +71,14 @@ vault/
 ```
 
 ## 工作流程
+
+推荐入口：
+
+```bash
+./scripts/prepare.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
+```
+
+`prepare.sh` 只执行 Step 1 和 Step 2，准备 PDF、全文、元数据和图片。正式笔记必须由当前正在执行 skill 的 Agent 读取这些材料后直接写入，不要调用 `summarize.sh`、`codex exec`、`opencode`、`claude`、`cc` 等外部 LLM 命令来生成正式笔记。
 
 ### Step 1: 从 Zotero 获取 PDF
 
@@ -112,10 +125,19 @@ vault/
 ./scripts/extract.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
 ```
 
+默认 `Z2O_EXTRACTOR=auto`：
+
+- 若配置 `MINERU_API_TOKEN` 或 `MINERU_TOKEN`，先调用 MinerU 精准解析 API，模型默认 `vlm`
+- MinerU 成功后，使用其 Markdown 输出作为全文，并保存解析 JSON、zip 和图片元素
+- 未配置 token 或 MinerU 调用失败时，自动回退到本地 PyMuPDF 提取
+- 若设置 `Z2O_EXTRACTOR=mineru`，MinerU 失败时直接报错，不回退
+- 若设置 `Z2O_EXTRACTOR=pymupdf`，只使用本地 PyMuPDF
+
 输出：
 
 - 全文：`{Z2O_TEMP_DIR}/{citekey}_text.md`
 - 图片和页面渲染：`{Z2O_IMAGE_DIR}/{citekey}/`
+- MinerU 原始结果：`{Z2O_TEMP_DIR}/{citekey}_mineru_full.zip` 和 `{Z2O_TEMP_DIR}/{citekey}_mineru*/`
 
 必须读完提取出的论文全文再写笔记。如果文本很长，需要分段读取直到 References / Bibliography 部分。动笔前先梳理：
 
@@ -132,6 +154,14 @@ vault/
 ```
 
 文件名、wikilink、frontmatter 中的唯一标识都使用 citekey。不要把 arXiv ID 当成主键；如果论文正文中包含 arXiv ID，可作为普通链接或补充字段出现。
+
+正式笔记生成规则：
+
+- 当前 Agent 必须读取 `{Z2O_TEMP_DIR}/{citekey}_text.md`、`{Z2O_TEMP_DIR}/{citekey}_zotero.json` 和 `{Z2O_IMAGE_DIR}/{citekey}/` 后自行写笔记
+- 不要调用 `summarize.sh` 生成正式笔记；它只用于纯 CLI 场景的本地草稿或显式兼容模式
+- 不要自动调用 `codex exec`、`opencode`、`claude`、`cc` 等外部 LLM 命令
+- 如果提取文本过长，分段读取；至少覆盖 Abstract、Introduction、Method/Approach、Experiments、Limitations/Discussion、References 前的主要内容
+- 写入前先用 `rg` 或分段读取梳理论文 section、Figure/Table 标题和实验指标，再按下面模板组织成规范中文笔记
 
 ### Step 4: 图片引用
 

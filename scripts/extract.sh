@@ -19,6 +19,8 @@ PYTHON_BIN="$(z2o_python_bin)"
 PDF_PATH="$Z2O_PDF_DIR_ABS/$CITEKEY.pdf"
 FIG_DIR="$Z2O_IMAGE_DIR_ABS/$CITEKEY"
 CACHE_DIR="$Z2O_TEMP_DIR_ABS"
+TEXT_PATH="$CACHE_DIR/${CITEKEY}_text.md"
+EXTRACTOR="${Z2O_EXTRACTOR:-auto}"
 
 if [[ ! -f "$PDF_PATH" ]]; then
     echo "❌ PDF 不存在: $PDF_PATH"
@@ -30,8 +32,12 @@ mkdir -p "$CACHE_DIR"
 
 echo "🔍 提取图片和文本..."
 
-# 使用 Python 提取图片和文本
-"$PYTHON_BIN" - "$CITEKEY" "$PDF_PATH" "$FIG_DIR" "$CACHE_DIR" << 'PYEOF'
+run_mineru() {
+    "$PYTHON_BIN" "$SCRIPT_DIR/mineru_extract.py" "$CITEKEY" "$PDF_PATH" "$TEXT_PATH" "$FIG_DIR" "$CACHE_DIR"
+}
+
+run_pymupdf() {
+    "$PYTHON_BIN" - "$CITEKEY" "$PDF_PATH" "$FIG_DIR" "$CACHE_DIR" << 'PYEOF'
 import sys
 
 try:
@@ -89,6 +95,31 @@ print(f"✅ 提取完成: {img_count} 张嵌入图片, {len(doc)} 页渲染图")
 
 doc.close()
 PYEOF
+}
+
+case "$EXTRACTOR" in
+    mineru)
+        run_mineru
+        ;;
+    pymupdf)
+        run_pymupdf
+        ;;
+    auto)
+        if [[ -n "${MINERU_API_TOKEN:-${MINERU_TOKEN:-}}" ]]; then
+            if ! run_mineru; then
+                echo "⚠️ MinerU 提取失败，回退到 PyMuPDF 本地提取。" >&2
+                run_pymupdf
+            fi
+        else
+            echo "ℹ️ 未配置 MINERU_API_TOKEN / MINERU_TOKEN，使用 PyMuPDF 本地提取。"
+            run_pymupdf
+        fi
+        ;;
+    *)
+        echo "❌ 不支持的 Z2O_EXTRACTOR: $EXTRACTOR (可选: auto, mineru, pymupdf)" >&2
+        exit 1
+        ;;
+esac
 
 echo "✅ 图片保存至: $FIG_DIR"
-echo "✅ 文本保存至: $CACHE_DIR/${CITEKEY}_text.md"
+echo "✅ 文本保存至: $TEXT_PATH"

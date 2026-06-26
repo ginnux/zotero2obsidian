@@ -1,5 +1,5 @@
 #!/bin/bash
-# 一键处理 Zotero 文献：取 PDF → 提取 → 生成笔记 → 更新索引
+# 一键处理 Zotero 文献：取 PDF → 提取 → 生成本地草稿 → 更新索引
 # 用法: ./paper.sh <citekey> [vault_path]
 #
 # 环境变量:
@@ -35,9 +35,9 @@ echo ""
 echo "🔍 Step 2/4: 提取文本和图片..."
 "$SCRIPT_DIR/extract.sh" "$CITEKEY" "$Z2O_VAULT"
 
-# Step 3: 生成笔记
+# Step 3: 生成本地草稿笔记
 echo ""
-echo "🤖 Step 3/4: AI 生成论文笔记..."
+echo "📝 Step 3/4: 生成本地草稿笔记..."
 "$SCRIPT_DIR/summarize.sh" "$CITEKEY" "$Z2O_VAULT"
 
 # Step 4: 更新索引
