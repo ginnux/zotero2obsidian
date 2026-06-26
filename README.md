@@ -1,10 +1,8 @@
-# 📄 Paper Skills
+# Zotero2Obsidian Skills
 
 [English](#english) | [中文](#中文)
 
-Agent skills for reading, indexing, and summarizing arXiv papers in Obsidian. Automatically downloads PDFs, extracts key figures, generates detailed Chinese notes, maintains a paper database, and creates interview-ready summary reports.
-
-Compatible with 40+ AI coding agents via the [Agent Skills](https://agentskills.io/) format.
+Agent skills for reading papers from a local Zotero library and writing structured Chinese reading notes in an Obsidian vault. The reading flow uses Better BibTeX citekeys as stable IDs: you provide a unique citekey, the skill asks Zotero for the PDF attachment, copies it into the vault, extracts text/images, and generates a note.
 
 ---
 
@@ -12,151 +10,141 @@ Compatible with 40+ AI coding agents via the [Agent Skills](https://agentskills.
 
 ## Available Skills
 
-### read-arxiv-paper
+### read-zotero-paper
 
-Download arXiv papers and generate in-depth reading notes in your Obsidian vault. Extracts key figures from arXiv HTML, writes structured Chinese notes with formulas and illustrations, and auto-updates the paper index.
+Read a paper from Zotero by Better BibTeX citekey and generate an in-depth Obsidian note.
 
 **Use when:**
-- "Read this paper https://arxiv.org/abs/2402.03300"
-- "Download and summarize 2503.14476"
-- "Read these three papers: 2402.03300, 2503.14476, 2503.20783"
+
+```text
+Read ouyang2026reasoningbank
+Read these papers: keyA2025, keyB2026
+```
 
 **Features:**
-- Downloads PDF to `assets/pdfs/`
-- Extracts key figures from arXiv HTML version (per-figure, not whole-page)
-- Generates structured notes with research motivation, core method, experiments
-- Customizable writing style (currently optimized for LLM researchers)
-- Auto-triggers `paper-index` skill after completion
-- Image width controlled with `|500` for Obsidian rendering
-- Cross-references via `[[arxiv_id]]` wikilinks
+
+- Uses Better BibTeX JSON-RPC `item.attachments`
+- Copies the selected PDF attachment to `assets/pdfs/{citekey}.pdf`
+- Extracts text and images into `.paper-cache/` and `assets/png/{citekey}/`
+- Generates a structured Chinese note at `papers/notes/{citekey}.md`
+- Uses citekey for filenames, wikilinks, and frontmatter IDs
+- Auto-updates the paper index after notes are generated
 
 ### paper-index
 
-Scan paper notes and maintain categorized paper database using Obsidian Bases (.base files).
-
-**Use when:**
-- "Update my paper index"
-- "Organize my papers"
-- "Generate paper list"
-
-**Features:**
-- Reads frontmatter from all notes in `papers/notes/`
-- Auto-generates `.base` files in `papers/index/`
-- One master base (All-Papers.base) for all papers
-- Per-category bases with tag-based filters (e.g. Reinforcement-Learning.base)
-- Papers can appear in multiple category bases
-- Requires Obsidian 1.9+ (Bases is a core plugin)
+Scan paper notes and maintain categorized Obsidian Bases files.
 
 ### paper-summary
 
-Generate structured survey reports from multiple related papers. Designed as interview preparation material — every section is structured so you can "speak it out loud".
-
-**Use when:**
-- "Summarize 2402.03300, 2503.14476, 2503.20783"
-- "Summarize the LLM-RL category"
-- "Help me review the GRPO paper series"
-
-**Features:**
-- TLDR paragraph for quick interview prep
-- Overview table: problem solved, core method, limitations per paper
-- Evolution chain with mermaid diagram
-- Per-paper deep dive: problem → prior work gaps → method with formulas → limitations
-- Side-by-side method comparison table
-- Open questions and future directions
-
-## Installation
-
-```bash
-# Install all skills
-npx skills add Chang-pw/paper2obsidian_skill --all
-
-# Install specific skill
-npx skills add Chang-pw/paper2obsidian_skill --skill read-arxiv-paper
-
-# Install to specific agent
-npx skills add Chang-pw/paper2obsidian_skill -a opencode --all
-npx skills add Chang-pw/paper2obsidian_skill -a claude-code --all
-
-# Update (re-install latest)
-npx skills remove read-arxiv-paper paper-index paper-summary
-npx skills add Chang-pw/paper2obsidian_skill --all
-```
+Generate structured survey reports from multiple related paper notes.
 
 ## Prerequisites
+
+1. Zotero is running.
+2. Better BibTeX is installed and enabled in Zotero.
+3. Better BibTeX JSON-RPC is reachable at:
+
+```text
+http://localhost:23119/better-bibtex/json-rpc
+```
+
+4. Python dependencies:
 
 ```bash
 pip install pymupdf
 ```
 
-Set your Obsidian vault path:
+If PyMuPDF is installed in a non-default interpreter, pass it explicitly:
+
+```bash
+PYTHON=/path/to/python ./scripts/extract.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
+```
+
+5. Set your Obsidian vault path:
+
 ```bash
 export OBSIDIAN_VAULT="$HOME/path/to/your/vault"
 ```
 
+## Zotero PDF Lookup
+
+The workflow calls Better BibTeX like this:
+
+```bash
+curl http://localhost:23119/better-bibtex/json-rpc \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  --data-binary '{
+    "jsonrpc": "2.0",
+    "method": "item.attachments",
+    "params": ["ouyang2026reasoningbank", "*"],
+    "id": 1
+  }'
+```
+
+Only `.pdf` attachments are used. HTML snapshots or other files are ignored.
+
 ## Vault Structure
 
-```
+```text
 your-vault/
 ├── assets/
-│   ├── pdfs/                  # Paper PDFs
-│   │   └── 2402.03300.pdf
-│   └── png/                   # Figures (by arXiv ID, only referenced ones)
-│       └── 2402.03300/
-│           ├── fig1.png
-│           └── fig2.png
+│   ├── pdfs/
+│   │   └── ouyang2026reasoningbank.pdf
+│   └── png/
+│       └── ouyang2026reasoningbank/
+│           ├── page1_img1.png
+│           └── page_1.png
 ├── papers/
-│   ├── index/                 # Obsidian Bases index (.base files)
-│   │   ├── All-Papers.base    # All papers
-│   │   ├── Reinforcement-Learning.base  # Category
-│   │   └── ...
-│   └── notes/                 # Paper notes (named by arXiv ID)
-│       └── 2402.03300.md
+│   ├── index/
+│   │   ├── All-Papers.base
+│   │   └── Reasoning.base
+│   └── notes/
+│       └── ouyang2026reasoningbank.md
 ├── knowledge/
-│   └── Summary/               # Survey reports (named by category in Chinese)
-│       └── 大模型强化学习.md
+│   └── Summary/
+└── .paper-cache/
+    ├── ouyang2026reasoningbank_text.md
+    └── ouyang2026reasoningbank_zotero.json
 ```
 
-## Usage
+## Script Usage
 
-Once installed, just talk to your agent:
+Run the full local pipeline:
 
-```
-Read this paper: https://arxiv.org/abs/2402.03300
-```
-
-```
-Read these papers: 2402.03300, 2503.14476, 2503.20783
+```bash
+./scripts/paper.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
 ```
 
-```
-Summarize the LLM-RL category
-```
+Or run each step:
 
+```bash
+./scripts/download.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
+./scripts/extract.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
+./scripts/summarize.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
+./scripts/index.sh "$OBSIDIAN_VAULT"
 ```
-Update my paper index
-```
-
-## Customization
-
-Fork this repo and edit the SKILL.md files to fit your needs:
-
-- `skills/read-arxiv-paper/SKILL.md` — Note template, writing style preferences, section priorities
-- `skills/paper-index/SKILL.md` — Category mapping rules, index table format
-- `skills/paper-summary/SKILL.md` — Survey report structure, detail level per section
 
 ## Skill Structure
 
-```
-paper2obsidian_skill/
+```text
+zotero2obsidian/
 ├── skills/
-│   ├── read-arxiv-paper/
-│   │   └── SKILL.md          # Paper reading & note generation
+│   ├── read-zotero-paper/
+│   │   └── SKILL.md
 │   ├── paper-index/
-│   │   └── SKILL.md          # Database index maintenance
+│   │   └── SKILL.md
 │   └── paper-summary/
-│       └── SKILL.md          # Survey report generation
-├── scripts/                   # Standalone shell scripts (optional)
-└── README.md
+│       └── SKILL.md
+├── scripts/
+│   ├── fetch_zotero_pdf.py
+│   ├── download.sh
+│   ├── extract.sh
+│   ├── summarize.sh
+│   ├── index.sh
+│   └── paper.sh
+└── templates/
 ```
 
 ## License
@@ -171,34 +159,15 @@ MIT
 
 ### 这是什么？
 
-一套用于在 Obsidian 中阅读、索引和总结 arXiv 论文的 Agent Skills。自动下载 PDF、提取关键图片、生成详细的中文论文解读笔记、维护论文数据库、生成面试复习用的综述报告。
-
-兼容 40+ AI 编程助手（OpenCode、Claude Code、Cursor、Codex 等），基于 [Agent Skills](https://agentskills.io/) 开放标准。
+这是一个把 Zotero 文献库接入 Obsidian 阅读流程的 Agent Skills 仓库。之后读论文时，你只需要输入 Better BibTeX 的唯一 `citekey`，skill 会从 Zotero 条目中找到 PDF 附件，复制到 Obsidian vault，再提取全文和图片，生成中文深度阅读笔记。
 
 ### 包含的 Skills
 
 | Skill | 说明 |
-|-------|------|
-| `read-arxiv-paper` | 下载论文 PDF，从 arXiv HTML 提取关键 Figure，生成深度解读笔记，自动更新索引 |
-| `paper-index` | 使用 Obsidian Bases 维护论文数据库，自动生成分类 .base 文件（需要 Obsidian 1.9+） |
-| `paper-summary` | 根据指定论文或分类，生成面试复习用的综述报告（含公式对比、演化脉络、方法对比表） |
-
-### 安装
-
-```bash
-# 安装所有 skills
-npx skills add Chang-pw/paper2obsidian_skill --all
-
-# 只安装特定 skill
-npx skills add Chang-pw/paper2obsidian_skill --skill read-arxiv-paper
-
-# 安装到指定 agent
-npx skills add Chang-pw/paper2obsidian_skill -a opencode --all
-
-# 更新（重新安装最新版）
-npx skills remove read-arxiv-paper paper-index paper-summary
-npx skills add Chang-pw/paper2obsidian_skill --all
-```
+| --- | --- |
+| `read-zotero-paper` | 按 citekey 从 Zotero 获取 PDF，提取全文和图片，生成论文解读笔记 |
+| `paper-index` | 使用 Obsidian Bases 维护论文笔记数据库 |
+| `paper-summary` | 根据多篇论文笔记生成综述报告 |
 
 ### 前置依赖
 
@@ -207,59 +176,55 @@ pip install pymupdf
 export OBSIDIAN_VAULT="$HOME/你的Vault路径"
 ```
 
+如果 PyMuPDF 装在非默认解释器里，可以用 `PYTHON=/path/to/python` 指定脚本使用的 Python。
+
+同时需要：
+
+- Zotero 正在运行
+- Better BibTeX 已安装并启用
+- Better BibTeX JSON-RPC 地址可访问：`http://localhost:23119/better-bibtex/json-rpc`
+
 ### 使用方式
 
-安装后直接和 agent 对话：
+安装 skill 后直接和 agent 对话：
 
-```
-帮我读这篇论文 https://arxiv.org/abs/2402.03300
-```
-
-```
-帮我读这三篇论文：2402.03300, 2503.14476, 2503.20783
+```text
+帮我读 ouyang2026reasoningbank
 ```
 
-```
-帮我总结 LLM-RL 分类的论文
+本地脚本也可以直接运行：
+
+```bash
+./scripts/paper.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
 ```
 
-```
-更新一下我的论文索引
-```
+### 目录结构
 
-### Vault 目录结构
-
-```
+```text
 your-vault/
 ├── assets/
-│   ├── pdfs/                  # 论文 PDF
-│   └── png/                   # 论文图片（按 arXiv ID 分目录，只存引用的图）
+│   ├── pdfs/                  # 从 Zotero 复制出的 PDF
+│   └── png/                   # 从 PDF 提取出的图片和页面渲染
 ├── papers/
-│   ├── index/                 # Obsidian Bases 索引（.base 文件）
-│   │   ├── All-Papers.base
-│   │   ├── Reinforcement-Learning.base
-│   │   └── ...
-│   └── notes/                 # 论文笔记（以 arXiv ID 命名）
-│       └── 2402.03300.md
+│   ├── index/                 # Obsidian Bases 索引
+│   └── notes/                 # 论文笔记，以 citekey 命名
 ├── knowledge/
-│   └── Summary/               # 综述报告（以分类中文名命名）
+│   └── Summary/               # 综述报告
+└── .paper-cache/              # 提取文本和 Zotero 附件缓存
 ```
 
 ### 笔记特点
 
 - 中文撰写，保留英文原标题
-- 侧重研究动机和核心方法（适合大模型研究者），实验结果简要总结
-- 图片从 arXiv HTML 精确提取关键 Figure，不全量下载
-- 相关论文用 `[[arxiv_id]]` wikilink 互相链接
-- 索引按分类自动分表
+- citekey 是唯一 ID，用于文件名、wikilink 和 frontmatter
+- 侧重研究动机和核心方法，适合大模型研究者
+- 图片引用本地 `assets/png/{citekey}/` 下的关键图或页面渲染
 
 ### 自定义
 
-Fork 后修改 `skills/` 下的 SKILL.md 文件：
-
-- **写作风格** — 在 `read-arxiv-paper/SKILL.md` 的"写作风格偏好"section 调整各部分详略
-- **分类规则** — 在 `paper-index/SKILL.md` 中自定义 tag → 分类映射和 .base 文件模板
-- **综述结构** — 在 `paper-summary/SKILL.md` 中调整报告模板和详细程度
+- 写作风格：`skills/read-zotero-paper/SKILL.md`
+- 分类规则：`skills/paper-index/SKILL.md`
+- 综述结构：`skills/paper-summary/SKILL.md`
 
 ### License
 

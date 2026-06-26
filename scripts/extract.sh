@@ -1,15 +1,35 @@
 #!/bin/bash
 # 从 PDF 中提取文本和图片
-# 用法: ./extract.sh <arxiv_id> [vault_path]
+# 用法: ./extract.sh <citekey> [vault_path]
 
 set -euo pipefail
 
-ARXIV_ID="$1"
-VAULT="${2:-$OBSIDIAN_VAULT}"
+if [[ $# -lt 1 ]]; then
+    echo "用法: $0 <citekey> [vault_path]" >&2
+    exit 1
+fi
 
-PDF_PATH="$VAULT/pdfs/$ARXIV_ID.pdf"
-FIG_DIR="$VAULT/figures/$ARXIV_ID"
+CITEKEY="$1"
+
+if [[ $# -ge 2 ]]; then
+    VAULT="$2"
+elif [[ -n "${OBSIDIAN_VAULT:-}" ]]; then
+    VAULT="$OBSIDIAN_VAULT"
+else
+    echo "❌ 未提供 vault_path，且 OBSIDIAN_VAULT 未设置" >&2
+    exit 1
+fi
+
+PDF_PATH="$VAULT/assets/pdfs/$CITEKEY.pdf"
+FIG_DIR="$VAULT/assets/png/$CITEKEY"
 CACHE_DIR="$VAULT/.paper-cache"
+if [[ -n "${PYTHON:-}" ]]; then
+    PYTHON_BIN="$PYTHON"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+else
+    PYTHON_BIN="python3"
+fi
 
 if [[ ! -f "$PDF_PATH" ]]; then
     echo "❌ PDF 不存在: $PDF_PATH"
@@ -22,17 +42,24 @@ mkdir -p "$CACHE_DIR"
 echo "🔍 提取图片和文本..."
 
 # 使用 Python 提取图片和文本
-python3 << 'PYEOF'
-import fitz  # pymupdf
+"$PYTHON_BIN" - "$CITEKEY" "$VAULT" << 'PYEOF'
 import sys
-import os
-import json
 
-arxiv_id = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("ARXIV_ID")
-vault = sys.argv[2] if len(sys.argv) > 2 else os.environ.get("OBSIDIAN_VAULT")
+try:
+    import fitz  # pymupdf
+except ModuleNotFoundError:
+    print(
+        "❌ 缺少 PyMuPDF（fitz）。请运行 `pip install pymupdf`，"
+        "或设置 `PYTHON=/path/to/python` 指向已安装 PyMuPDF 的解释器。",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
 
-pdf_path = f"{vault}/pdfs/{arxiv_id}.pdf"
-fig_dir = f"{vault}/figures/{arxiv_id}"
+citekey = sys.argv[1]
+vault = sys.argv[2]
+
+pdf_path = f"{vault}/assets/pdfs/{citekey}.pdf"
+fig_dir = f"{vault}/assets/png/{citekey}"
 cache_dir = f"{vault}/.paper-cache"
 
 doc = fitz.open(pdf_path)
@@ -43,7 +70,7 @@ for page in doc:
     full_text += page.get_text() + "\n\n"
 
 # 保存全文
-with open(f"{cache_dir}/{arxiv_id}_text.md", "w") as f:
+with open(f"{cache_dir}/{citekey}_text.md", "w", encoding="utf-8") as f:
     f.write(full_text)
 
 # 提取图片
@@ -77,4 +104,4 @@ doc.close()
 PYEOF
 
 echo "✅ 图片保存至: $FIG_DIR"
-echo "✅ 文本保存至: $CACHE_DIR/${ARXIV_ID}_text.md"
+echo "✅ 文本保存至: $CACHE_DIR/${CITEKEY}_text.md"

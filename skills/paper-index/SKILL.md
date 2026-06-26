@@ -1,6 +1,6 @@
 ---
 name: paper-index
-description: 使用 Obsidian Bases 维护论文数据库，自动生成和更新 .base 文件实现动态分类视图
+description: 使用 Obsidian Bases 维护 Zotero 论文笔记数据库，自动生成和更新 .base 文件实现动态分类视图
 ---
 
 # Paper Index
@@ -10,12 +10,12 @@ description: 使用 Obsidian Bases 维护论文数据库，自动生成和更新
 ## 触发条件
 
 当用户要求"更新索引"、"整理论文"、"生成论文列表"时加载此 skill。
-也会在 read-arxiv-paper skill 完成后自动执行。
+也会在 read-zotero-paper skill 完成后自动执行。
 
 ## 前置要求
 
 - Obsidian 1.9+ （内置 Bases 功能）
-- 论文笔记的 frontmatter 必须包含以下字段：title, title_zh, authors, year, arxiv, pdf, tags, tldr, date_added
+- 论文笔记的 frontmatter 必须包含以下字段：title, title_zh, authors, year, citekey, source, pdf, tags, tldr, date_added
 
 ## 目录结构
 
@@ -28,7 +28,7 @@ vault/
 │   │   ├── Reasoning.base       # 分类库
 │   │   └── ...
 │   └── notes/                   # 论文笔记
-│       ├── 2402.03300.md
+│       ├── ouyang2026reasoningbank.md
 │       └── ...
 ```
 
@@ -36,7 +36,7 @@ vault/
 
 ### Step 1: 扫描论文笔记
 
-读取 `$OBSIDIAN_VAULT/papers/notes/` 下所有 `.md` 文件的 frontmatter，提取 tags 字段。
+读取 `$OBSIDIAN_VAULT/papers/notes/` 下所有 `.md` 文件的 frontmatter，提取 citekey 和 tags 字段。文件名应当是 Better BibTeX citekey。
 
 ### Step 2: 确定分类
 
