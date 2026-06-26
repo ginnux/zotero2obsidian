@@ -4,28 +4,27 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/env.sh"
+
 if [[ $# -lt 1 ]]; then
     echo "用法: $0 <citekey> [vault_path]" >&2
     exit 1
 fi
 
 CITEKEY="$1"
+z2o_configure_paths "${2:-}"
 
-if [[ $# -ge 2 ]]; then
-    VAULT="$2"
-elif [[ -n "${OBSIDIAN_VAULT:-}" ]]; then
-    VAULT="$OBSIDIAN_VAULT"
-else
-    echo "❌ 未提供 vault_path，且 OBSIDIAN_VAULT 未设置" >&2
-    exit 1
-fi
-
-CACHE_DIR="$VAULT/.paper-cache"
+CACHE_DIR="$Z2O_TEMP_DIR_ABS"
 TEXT_FILE="$CACHE_DIR/${CITEKEY}_text.md"
 META_FILE="$CACHE_DIR/${CITEKEY}_zotero.json"
-FIG_DIR="$VAULT/assets/png/$CITEKEY"
-OUTPUT_DIR="$VAULT/papers/notes"
+FIG_DIR="$Z2O_IMAGE_DIR_ABS/$CITEKEY"
+OUTPUT_DIR="$Z2O_NOTES_DIR_ABS"
 OUTPUT="$OUTPUT_DIR/$CITEKEY.md"
+FIG_REL_DIR="$(z2o_relpath "$Z2O_IMAGE_DIR_ABS" "$Z2O_NOTES_DIR_ABS")"
+PDF_REL_DIR="$(z2o_relpath "$Z2O_PDF_DIR_ABS" "$Z2O_NOTES_DIR_ABS")"
+FIG_LINK_PREFIX="$(z2o_join_path "$FIG_REL_DIR" "$CITEKEY")"
+PDF_LINK="$(z2o_join_path "$PDF_REL_DIR" "$CITEKEY.pdf")"
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -52,7 +51,7 @@ PROMPT=$(cat << PROMPTEOF
 1. 严格按照下面的模板格式输出
 2. 每个 section 都要详细展开，不要敷衍
 3. 核心方法部分要像写 blog 一样，用通俗的语言解释清楚
-4. 在合适的位置插入图片引用，路径使用 Markdown 相对路径：![说明|600](../../assets/png/${CITEKEY}/xxx.png)
+4. 在合适的位置插入图片引用，路径使用 Markdown 相对路径：![说明|600](${FIG_LINK_PREFIX}/xxx.png)
 5. 对每张图都要有解读说明
 6. 相关论文部分用 [[]] 双链格式
 7. frontmatter 中的 tags 要准确反映论文领域
@@ -75,7 +74,7 @@ authors: [作者列表]
 year: 年份
 citekey: "${CITEKEY}"
 source: "zotero"
-pdf: "[[assets/pdfs/${CITEKEY}.pdf]]"
+pdf: "${PDF_LINK}"
 tags: [标签]
 status: unread
 rating: 
@@ -93,7 +92,7 @@ tldr: "一句话概括核心贡献"
 - **机构：**
 - **发表：**
 - **Zotero citekey：** ${CITEKEY}
-- **PDF：** [本地 PDF](../../assets/pdfs/${CITEKEY}.pdf)
+- **PDF：** [本地 PDF](${PDF_LINK})
 
 ## 🎯 研究动机与问题
 

@@ -4,32 +4,21 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/env.sh"
+
 if [[ $# -lt 1 ]]; then
     echo "用法: $0 <citekey> [vault_path]" >&2
     exit 1
 fi
 
 CITEKEY="$1"
+z2o_configure_paths "${2:-}"
+PYTHON_BIN="$(z2o_python_bin)"
 
-if [[ $# -ge 2 ]]; then
-    VAULT="$2"
-elif [[ -n "${OBSIDIAN_VAULT:-}" ]]; then
-    VAULT="$OBSIDIAN_VAULT"
-else
-    echo "❌ 未提供 vault_path，且 OBSIDIAN_VAULT 未设置" >&2
-    exit 1
-fi
-
-PDF_PATH="$VAULT/assets/pdfs/$CITEKEY.pdf"
-FIG_DIR="$VAULT/assets/png/$CITEKEY"
-CACHE_DIR="$VAULT/.paper-cache"
-if [[ -n "${PYTHON:-}" ]]; then
-    PYTHON_BIN="$PYTHON"
-elif command -v python >/dev/null 2>&1; then
-    PYTHON_BIN="python"
-else
-    PYTHON_BIN="python3"
-fi
+PDF_PATH="$Z2O_PDF_DIR_ABS/$CITEKEY.pdf"
+FIG_DIR="$Z2O_IMAGE_DIR_ABS/$CITEKEY"
+CACHE_DIR="$Z2O_TEMP_DIR_ABS"
 
 if [[ ! -f "$PDF_PATH" ]]; then
     echo "❌ PDF 不存在: $PDF_PATH"
@@ -42,7 +31,7 @@ mkdir -p "$CACHE_DIR"
 echo "🔍 提取图片和文本..."
 
 # 使用 Python 提取图片和文本
-"$PYTHON_BIN" - "$CITEKEY" "$VAULT" << 'PYEOF'
+"$PYTHON_BIN" - "$CITEKEY" "$PDF_PATH" "$FIG_DIR" "$CACHE_DIR" << 'PYEOF'
 import sys
 
 try:
@@ -56,11 +45,9 @@ except ModuleNotFoundError:
     raise SystemExit(1)
 
 citekey = sys.argv[1]
-vault = sys.argv[2]
-
-pdf_path = f"{vault}/assets/pdfs/{citekey}.pdf"
-fig_dir = f"{vault}/assets/png/{citekey}"
-cache_dir = f"{vault}/.paper-cache"
+pdf_path = sys.argv[2]
+fig_dir = sys.argv[3]
+cache_dir = sys.argv[4]
 
 doc = fitz.open(pdf_path)
 

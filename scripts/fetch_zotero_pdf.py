@@ -88,6 +88,16 @@ def main() -> int:
     parser.add_argument("citekey", help="Better BibTeX citekey")
     parser.add_argument("vault", help="Obsidian vault path")
     parser.add_argument(
+        "--pdf-dir",
+        default="assets/pdfs",
+        help="PDF output directory, absolute or relative to vault",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        default=".paper-cache",
+        help="metadata cache directory, absolute or relative to vault",
+    )
+    parser.add_argument(
         "--bbt-url",
         default=DEFAULT_BBT_URL,
         help=f"Better BibTeX JSON-RPC URL (default: {DEFAULT_BBT_URL})",
@@ -101,8 +111,12 @@ def main() -> int:
         fail("citekey 会作为文件名使用，不能包含路径分隔符 / 或 \\")
 
     vault = Path(args.vault).expanduser().resolve()
-    pdf_dir = vault / "assets" / "pdfs"
-    cache_dir = vault / ".paper-cache"
+    pdf_dir = Path(args.pdf_dir).expanduser()
+    if not pdf_dir.is_absolute():
+        pdf_dir = vault / pdf_dir
+    cache_dir = Path(args.cache_dir).expanduser()
+    if not cache_dir.is_absolute():
+        cache_dir = vault / cache_dir
     pdf_dir.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)
 

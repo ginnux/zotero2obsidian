@@ -27,6 +27,7 @@ Read these papers: keyA2025, keyB2026
 - Copies the selected PDF attachment to `assets/pdfs/{citekey}.pdf`
 - Extracts text and images into `.paper-cache/` and `assets/png/{citekey}/`
 - Generates a structured Chinese note at `papers/notes/{citekey}.md`
+- Supports `.env` configuration for vault and directory layout
 - Uses citekey for filenames, wikilinks, and frontmatter IDs
 - Auto-updates the paper index after notes are generated
 
@@ -60,11 +61,25 @@ If PyMuPDF is installed in a non-default interpreter, pass it explicitly:
 PYTHON=/path/to/python ./scripts/extract.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
 ```
 
-5. Set your Obsidian vault path:
+5. Configure paths with `.env`:
 
 ```bash
-export OBSIDIAN_VAULT="$HOME/path/to/your/vault"
+cp .env.example .env
 ```
+
+Then edit `.env`:
+
+```bash
+Z2O_VAULT="/absolute/path/to/your/vault"
+Z2O_NOTES_DIR="papers/notes"
+Z2O_INDEX_DIR="papers/index"
+Z2O_SUMMARY_DIR="knowledge/Summary"
+Z2O_TEMP_DIR=".paper-cache"
+Z2O_PDF_DIR="assets/pdfs"
+Z2O_IMAGE_DIR="assets/png"
+```
+
+Directory values may be relative to `Z2O_VAULT` or absolute. The scripts still support `OBSIDIAN_VAULT` for backward compatibility, and an explicit `vault_path` argument overrides `.env`.
 
 ## Zotero PDF Lookup
 
@@ -114,16 +129,22 @@ your-vault/
 Run the full local pipeline:
 
 ```bash
-./scripts/paper.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
+./scripts/paper.sh ouyang2026reasoningbank
 ```
 
 Or run each step:
 
 ```bash
-./scripts/download.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
-./scripts/extract.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
-./scripts/summarize.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
-./scripts/index.sh "$OBSIDIAN_VAULT"
+./scripts/download.sh ouyang2026reasoningbank
+./scripts/extract.sh ouyang2026reasoningbank
+./scripts/summarize.sh ouyang2026reasoningbank
+./scripts/index.sh
+```
+
+For temporary tests, pass a vault path explicitly:
+
+```bash
+./scripts/extract.sh ouyang2026reasoningbank /private/tmp/z2o-smoke
 ```
 
 ## Skill Structure
@@ -139,6 +160,7 @@ zotero2obsidian/
 │       └── SKILL.md
 ├── scripts/
 │   ├── fetch_zotero_pdf.py
+│   ├── env.sh
 │   ├── download.sh
 │   ├── extract.sh
 │   ├── summarize.sh
@@ -173,10 +195,24 @@ MIT
 
 ```bash
 pip install pymupdf
-export OBSIDIAN_VAULT="$HOME/你的Vault路径"
+cp .env.example .env
 ```
 
-如果 PyMuPDF 装在非默认解释器里，可以用 `PYTHON=/path/to/python` 指定脚本使用的 Python。
+在 `.env` 中配置：
+
+```bash
+Z2O_VAULT="/你的Vault绝对路径"
+Z2O_NOTES_DIR="papers/notes"
+Z2O_INDEX_DIR="papers/index"
+Z2O_SUMMARY_DIR="knowledge/Summary"
+Z2O_TEMP_DIR=".paper-cache"
+Z2O_PDF_DIR="assets/pdfs"
+Z2O_IMAGE_DIR="assets/png"
+```
+
+这些目录可以写相对于 vault 的路径，也可以写绝对路径。`OBSIDIAN_VAULT` 仍然兼容；命令行传入的 `vault_path` 优先级最高。
+
+如果 PyMuPDF 装在非默认解释器里，可以在 `.env` 中设置 `PYTHON=/path/to/python`。
 
 同时需要：
 
@@ -195,7 +231,7 @@ export OBSIDIAN_VAULT="$HOME/你的Vault路径"
 本地脚本也可以直接运行：
 
 ```bash
-./scripts/paper.sh ouyang2026reasoningbank "$OBSIDIAN_VAULT"
+./scripts/paper.sh ouyang2026reasoningbank
 ```
 
 ### 目录结构
@@ -218,7 +254,7 @@ your-vault/
 - 中文撰写，保留英文原标题
 - citekey 是唯一 ID，用于文件名、wikilink 和 frontmatter
 - 侧重研究动机和核心方法，适合大模型研究者
-- 图片引用本地 `assets/png/{citekey}/` 下的关键图或页面渲染
+- 图片引用 `Z2O_IMAGE_DIR/{citekey}/` 下的关键图或页面渲染，脚本会按笔记目录计算相对路径
 
 ### 自定义
 

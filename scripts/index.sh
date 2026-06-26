@@ -4,17 +4,13 @@
 
 set -euo pipefail
 
-if [[ $# -ge 1 ]]; then
-    VAULT="$1"
-elif [[ -n "${OBSIDIAN_VAULT:-}" ]]; then
-    VAULT="$OBSIDIAN_VAULT"
-else
-    echo "❌ 未提供 vault_path，且 OBSIDIAN_VAULT 未设置" >&2
-    exit 1
-fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/env.sh"
 
-PAPERS_DIR="$VAULT/papers/notes"
-INDEX_DIR="$VAULT/papers/index"
+z2o_configure_paths "${1:-}"
+
+PAPERS_DIR="$Z2O_NOTES_DIR_ABS"
+INDEX_DIR="$Z2O_INDEX_DIR_ABS"
 
 mkdir -p "$PAPERS_DIR"
 mkdir -p "$INDEX_DIR"
