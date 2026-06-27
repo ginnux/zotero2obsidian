@@ -28,7 +28,7 @@ Zotero2Obsidian Skills is a local-first workflow for researchers who read papers
 
 ### 🚀 Quick Start
 
-This is the minimum setup needed to run the workflow.
+This is the minimum setup needed to run the workflow through the Agent skill.
 
 #### 1. Prepare Zotero
 
@@ -46,33 +46,54 @@ http://localhost:23119/better-bibtex/json-rpc
 pip install pymupdf
 ```
 
-#### 3. Configure your vault path
+#### 3. Create `.env`
 
-```bash
-cp .env.example .env
-```
+Copy `.env.example` to `.env`, then set the values for your machine.
 
-Edit `.env` and set:
+Minimum required value:
 
 ```bash
 Z2O_VAULT="/absolute/path/to/your/ObsidianVault"
 ```
 
-#### 4. Prepare one paper
+Recommended `.env` entries:
 
 ```bash
-./scripts/prepare.sh ouyang2026reasoningbank
+Z2O_VAULT="/absolute/path/to/your/ObsidianVault"
+Z2O_NOTES_DIR="papers/notes"
+Z2O_INDEX_DIR="papers/index"
+Z2O_SUMMARY_DIR="knowledge/Summary"
+Z2O_TEMP_DIR=".paper-cache"
+Z2O_ASSETS_DIR="assets"
+BBT_JSON_RPC_URL="http://localhost:23119/better-bibtex/json-rpc"
+Z2O_EXTRACTOR="auto"
 ```
 
-Expected outputs:
+Optional MinerU precise parsing entries:
+
+```bash
+MINERU_API_TOKEN="your-token"
+MINERU_API_BASE="https://mineru.net/api/v4"
+MINERU_MODEL_VERSION="vlm"
+MINERU_LANGUAGE="ch"
+```
+
+#### 4. Ask the Agent to read one paper
+
+Use the `read-zotero-paper` skill from your Agent, for example:
+
+```text
+Use the read-zotero-paper skill to read Zotero paper ouyang2026reasoningbank and write the Obsidian note.
+```
+
+The skill prepares materials, reads the extracted paper, writes the final note, and updates indexes. Expected outputs:
 
 ```text
 assets/ouyang2026reasoningbank/ouyang2026reasoningbank.pdf
 .paper-cache/ouyang2026reasoningbank_text.md
 .paper-cache/ouyang2026reasoningbank_zotero.json
+papers/notes/ouyang2026reasoningbank.md
 ```
-
-When used through the `read-zotero-paper` skill, the current Agent reads these extracted materials and writes the final note.
 
 ### 🧩 Skills
 
@@ -88,28 +109,15 @@ Example prompt:
 Read this paper: ouyang2026reasoningbank
 ```
 
-### 🛠️ Script Workflow
+### 🛠️ Agent Workflow
 
-Recommended material-preparation entry:
+The recommended entry point is the `read-zotero-paper` skill, not manual script execution. Give the Agent one or more Better BibTeX citekeys, and the skill will:
 
-```bash
-./scripts/prepare.sh <citekey>
-```
-
-This runs:
-
-```bash
-./scripts/download.sh <citekey>
-./scripts/extract.sh <citekey>
-```
-
-For a full CLI smoke test with a deterministic local draft:
-
-```bash
-./scripts/paper.sh <citekey>
-```
-
-The best-quality note path is still the Agent skill path: `prepare.sh` prepares PDF/text/assets, then the current Agent reads the extracted paper and writes the final note.
+1. Check whether the target note already exists.
+2. Fetch the Zotero PDF attachment through Better BibTeX.
+3. Extract text, metadata, figures, and rendered pages.
+4. Read the extracted paper materials directly in the current Agent session.
+5. Write the formal Obsidian note and refresh the paper indexes.
 
 ### ⚙️ Configuration
 
@@ -177,19 +185,15 @@ your-vault/
 
 ### 🔍 How Zotero Lookup Works
 
-The download step calls Better BibTeX JSON-RPC:
+The skill fetches Zotero attachments through Better BibTeX JSON-RPC. It uses the `item.attachments` method with the citekey:
 
-```bash
-curl http://localhost:23119/better-bibtex/json-rpc \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  --data-binary '{
-    "jsonrpc": "2.0",
-    "method": "item.attachments",
-    "params": ["ouyang2026reasoningbank", "*"],
-    "id": 1
-  }'
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "item.attachments",
+  "params": ["ouyang2026reasoningbank", "*"],
+  "id": 1
+}
 ```
 
 Only PDF attachments are used. HTML snapshots and other files are ignored.
@@ -282,7 +286,7 @@ Zotero2Obsidian Skills 是一个本地优先的论文阅读工作流，适合同
 
 ### 🚀 快速上手
 
-这里只保留能启动的最小流程。
+这里只保留通过 Agent skill 启动工作流的最小流程。
 
 #### 1. 准备 Zotero
 
@@ -300,33 +304,54 @@ http://localhost:23119/better-bibtex/json-rpc
 pip install pymupdf
 ```
 
-#### 3. 配置 vault 路径
+#### 3. 创建 `.env`
 
-```bash
-cp .env.example .env
-```
+把 `.env.example` 复制为 `.env`，然后按本机路径修改配置。
 
-编辑 `.env`，设置：
+最小必填项：
 
 ```bash
 Z2O_VAULT="/你的ObsidianVault绝对路径"
 ```
 
-#### 4. 准备一篇论文
+推荐保留或按需调整的 `.env` 配置项：
 
 ```bash
-./scripts/prepare.sh ouyang2026reasoningbank
+Z2O_VAULT="/你的ObsidianVault绝对路径"
+Z2O_NOTES_DIR="papers/notes"
+Z2O_INDEX_DIR="papers/index"
+Z2O_SUMMARY_DIR="knowledge/Summary"
+Z2O_TEMP_DIR=".paper-cache"
+Z2O_ASSETS_DIR="assets"
+BBT_JSON_RPC_URL="http://localhost:23119/better-bibtex/json-rpc"
+Z2O_EXTRACTOR="auto"
 ```
 
-成功后会生成：
+如果要启用 MinerU 精准解析，可额外配置：
+
+```bash
+MINERU_API_TOKEN="你的MinerU token"
+MINERU_API_BASE="https://mineru.net/api/v4"
+MINERU_MODEL_VERSION="vlm"
+MINERU_LANGUAGE="ch"
+```
+
+#### 4. 让 Agent 阅读一篇论文
+
+在 Agent 中直接调用 `read-zotero-paper` skill，例如：
+
+```text
+使用 read-zotero-paper skill 阅读 Zotero 论文 ouyang2026reasoningbank，并写入 Obsidian 笔记。
+```
+
+skill 会准备材料、读取提取出的论文内容、写正式笔记并更新索引。成功后会生成：
 
 ```text
 assets/ouyang2026reasoningbank/ouyang2026reasoningbank.pdf
 .paper-cache/ouyang2026reasoningbank_text.md
 .paper-cache/ouyang2026reasoningbank_zotero.json
+papers/notes/ouyang2026reasoningbank.md
 ```
-
-如果通过 `read-zotero-paper` skill 使用，准备完成后当前 Agent 会读取这些材料并写正式笔记。
 
 ### 🧩 Skills
 
@@ -342,28 +367,15 @@ assets/ouyang2026reasoningbank/ouyang2026reasoningbank.pdf
 阅读这篇文章：ouyang2026reasoningbank
 ```
 
-### 🛠️ 脚本流程
+### 🛠️ Agent 工作流
 
-推荐的材料准备入口：
+推荐入口是 `read-zotero-paper` skill，而不是手动执行脚本。把一个或多个 Better BibTeX citekey 交给 Agent 后，skill 会：
 
-```bash
-./scripts/prepare.sh <citekey>
-```
-
-它会依次运行：
-
-```bash
-./scripts/download.sh <citekey>
-./scripts/extract.sh <citekey>
-```
-
-如果想跑完整 CLI 冒烟测试并生成确定性本地草稿：
-
-```bash
-./scripts/paper.sh <citekey>
-```
-
-质量最高的路径仍然是 Agent skill：`prepare.sh` 只准备 PDF、全文和图片资产，然后当前 Agent 阅读提取材料并写正式笔记。
+1. 检查目标笔记是否已存在。
+2. 通过 Better BibTeX 获取 Zotero PDF 附件。
+3. 提取全文、元数据、图片和页面渲染。
+4. 由当前 Agent 会话直接读取提取材料。
+5. 写入正式 Obsidian 笔记，并刷新论文索引。
 
 ### ⚙️ 配置
 
@@ -431,22 +443,18 @@ your-vault/
 
 ### 🔍 Zotero 查询方式
 
-下载步骤会调用 Better BibTeX JSON-RPC：
+skill 获取 Zotero 附件时会调用 Better BibTeX JSON-RPC，使用 `item.attachments` 方法和 citekey：
 
-```bash
-curl http://localhost:23119/better-bibtex/json-rpc \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  --data-binary '{
-    "jsonrpc": "2.0",
-    "method": "item.attachments",
-    "params": ["ouyang2026reasoningbank", "*"],
-    "id": 1
-  }'
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "item.attachments",
+  "params": ["ouyang2026reasoningbank", "*"],
+  "id": 1
+}
 ```
 
-脚本只使用 PDF 附件，会忽略 HTML 快照和其他文件。
+工作流只使用 PDF 附件，会忽略 HTML 快照和其他文件。
 
 ### 🧠 笔记风格
 
