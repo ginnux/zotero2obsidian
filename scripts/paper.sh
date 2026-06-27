@@ -29,6 +29,8 @@ echo "========================"
 echo ""
 echo "📥 Step 1/4: 从 Zotero 获取 PDF..."
 CITEKEY=$("$SCRIPT_DIR/download.sh" "$CITEKEY" "$Z2O_VAULT" | tail -1)
+ASSET_DIR="$(z2o_paper_asset_dir "$CITEKEY")"
+PDF_PATH="$(z2o_paper_pdf_path "$CITEKEY")"
 
 # Step 2: 提取
 echo ""
@@ -48,5 +50,5 @@ echo "📚 Step 4/4: 更新论文索引..."
 echo ""
 echo "========================"
 echo "🎉 完成！论文笔记: $Z2O_NOTES_DIR_ABS/$CITEKEY.md"
-echo "📂 图片目录: $Z2O_IMAGE_DIR_ABS/$CITEKEY/"
-echo "📄 原始 PDF: $Z2O_PDF_DIR_ABS/$CITEKEY.pdf"
+echo "📂 资产目录: $ASSET_DIR/"
+echo "📄 原始 PDF: $PDF_PATH"

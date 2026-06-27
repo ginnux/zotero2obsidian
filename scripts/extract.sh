@@ -16,8 +16,9 @@ CITEKEY="$1"
 z2o_configure_paths "${2:-}"
 PYTHON_BIN="$(z2o_python_bin)"
 
-PDF_PATH="$Z2O_PDF_DIR_ABS/$CITEKEY.pdf"
-FIG_DIR="$Z2O_IMAGE_DIR_ABS/$CITEKEY"
+ASSET_DIR="$(z2o_paper_asset_dir "$CITEKEY")"
+PDF_PATH="$(z2o_paper_pdf_path "$CITEKEY")"
+FIG_DIR="$ASSET_DIR"
 CACHE_DIR="$Z2O_TEMP_DIR_ABS"
 TEXT_PATH="$CACHE_DIR/${CITEKEY}_text.md"
 EXTRACTOR="${Z2O_EXTRACTOR:-auto}"
@@ -97,8 +98,23 @@ doc.close()
 PYEOF
 }
 
+run_mineru_or_pymupdf() {
+    if ! run_mineru; then
+        echo "⚠️ MinerU 提取失败或不可用，回退到 PyMuPDF 本地提取。" >&2
+        run_pymupdf
+    fi
+}
+
 case "$EXTRACTOR" in
     mineru)
+        if [[ -n "${MINERU_API_TOKEN:-${MINERU_TOKEN:-}}" ]]; then
+            run_mineru_or_pymupdf
+        else
+            echo "⚠️ 已配置 Z2O_EXTRACTOR=mineru，但未配置 MINERU_API_TOKEN / MINERU_TOKEN，回退到 PyMuPDF 本地提取。"
+            run_pymupdf
+        fi
+        ;;
+    mineru-strict)
         run_mineru
         ;;
     pymupdf)
@@ -106,17 +122,14 @@ case "$EXTRACTOR" in
         ;;
     auto)
         if [[ -n "${MINERU_API_TOKEN:-${MINERU_TOKEN:-}}" ]]; then
-            if ! run_mineru; then
-                echo "⚠️ MinerU 提取失败，回退到 PyMuPDF 本地提取。" >&2
-                run_pymupdf
-            fi
+            run_mineru_or_pymupdf
         else
             echo "ℹ️ 未配置 MINERU_API_TOKEN / MINERU_TOKEN，使用 PyMuPDF 本地提取。"
             run_pymupdf
         fi
         ;;
     *)
-        echo "❌ 不支持的 Z2O_EXTRACTOR: $EXTRACTOR (可选: auto, mineru, pymupdf)" >&2
+        echo "❌ 不支持的 Z2O_EXTRACTOR: $EXTRACTOR (可选: auto, mineru, mineru-strict, pymupdf)" >&2
         exit 1
         ;;
 esac

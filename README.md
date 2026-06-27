@@ -24,8 +24,8 @@ Read these papers: keyA2025, keyB2026
 **Features:**
 
 - Uses Better BibTeX JSON-RPC `item.attachments`
-- Copies the selected PDF attachment to `assets/pdfs/{citekey}.pdf`
-- Extracts text and images into `.paper-cache/` and `assets/png/{citekey}/`
+- Copies the selected PDF attachment to `assets/{citekey}/{citekey}.pdf`
+- Extracts text and images into `.paper-cache/` and `assets/{citekey}/`
 - Generates a structured Chinese note at `papers/notes/{citekey}.md`
 - Supports `.env` configuration for vault and directory layout
 - Prefers MinerU precise parsing for text/elements when configured
@@ -76,8 +76,7 @@ Z2O_NOTES_DIR="papers/notes"
 Z2O_INDEX_DIR="papers/index"
 Z2O_SUMMARY_DIR="knowledge/Summary"
 Z2O_TEMP_DIR=".paper-cache"
-Z2O_PDF_DIR="assets/pdfs"
-Z2O_IMAGE_DIR="assets/png"
+Z2O_ASSETS_DIR="assets"
 ```
 
 Directory values may be relative to `Z2O_VAULT` or absolute. The scripts still support `OBSIDIAN_VAULT` for backward compatibility, and an explicit `vault_path` argument overrides `.env`.
@@ -91,7 +90,7 @@ MINERU_MODEL_VERSION="vlm"
 MINERU_LANGUAGE="ch"
 ```
 
-With `Z2O_EXTRACTOR=auto`, `extract.sh` uses MinerU first when a token exists, then falls back to PyMuPDF if MinerU is unavailable. Use `Z2O_EXTRACTOR=mineru` to require MinerU, or `Z2O_EXTRACTOR=pymupdf` to force local extraction.
+With `Z2O_EXTRACTOR=auto` or `Z2O_EXTRACTOR=mineru`, `extract.sh` uses MinerU first when a token exists, then falls back to PyMuPDF if MinerU is unavailable. Use `Z2O_EXTRACTOR=mineru-strict` to require MinerU, or `Z2O_EXTRACTOR=pymupdf` to force local extraction.
 
 7. Optional: choose the CLI note generator:
 
@@ -125,12 +124,10 @@ Only `.pdf` attachments are used. HTML snapshots or other files are ignored.
 ```text
 your-vault/
 ├── assets/
-│   ├── pdfs/
-│   │   └── ouyang2026reasoningbank.pdf
-│   └── png/
-│       └── ouyang2026reasoningbank/
-│           ├── page1_img1.png
-│           └── page_1.png
+│   └── ouyang2026reasoningbank/
+│       ├── ouyang2026reasoningbank.pdf
+│       ├── page1_img1.png
+│       └── page_1.png
 ├── papers/
 │   ├── index/
 │   │   ├── All-Papers.base
@@ -152,7 +149,7 @@ Recommended Agent skill flow:
 ./scripts/prepare.sh ouyang2026reasoningbank
 ```
 
-`prepare.sh` only downloads the Zotero PDF and extracts text/images. The current skill Agent then reads `.paper-cache/{citekey}_text.md`, selects key figures from `assets/png/{citekey}/`, writes the formal note, and runs `./scripts/index.sh`.
+`prepare.sh` only downloads the Zotero PDF and extracts text/images. The current skill Agent then reads `.paper-cache/{citekey}_text.md`, selects key figures from `assets/{citekey}/`, writes the formal note, and runs `./scripts/index.sh`.
 
 Run the full CLI fallback pipeline:
 
@@ -238,8 +235,7 @@ Z2O_NOTES_DIR="papers/notes"
 Z2O_INDEX_DIR="papers/index"
 Z2O_SUMMARY_DIR="knowledge/Summary"
 Z2O_TEMP_DIR=".paper-cache"
-Z2O_PDF_DIR="assets/pdfs"
-Z2O_IMAGE_DIR="assets/png"
+Z2O_ASSETS_DIR="assets"
 ```
 
 这些目录可以写相对于 vault 的路径，也可以写绝对路径。`OBSIDIAN_VAULT` 仍然兼容；命令行传入的 `vault_path` 优先级最高。
@@ -253,7 +249,7 @@ MINERU_MODEL_VERSION="vlm"
 MINERU_LANGUAGE="ch"
 ```
 
-`auto` 模式会在配置 token 后优先调用 MinerU 精准解析；未配置 token 或 MinerU 不可用时回退 PyMuPDF。本地强制模式可用 `Z2O_EXTRACTOR=pymupdf`，强制 MinerU 可用 `Z2O_EXTRACTOR=mineru`。
+`auto` 或 `mineru` 模式会在配置 token 后优先调用 MinerU 精准解析；未配置 token 或 MinerU 不可用时回退 PyMuPDF。本地强制模式可用 `Z2O_EXTRACTOR=pymupdf`，强制 MinerU 且不回退可用 `Z2O_EXTRACTOR=mineru-strict`。
 
 可选：指定 CLI 草稿生成器：
 
@@ -293,8 +289,10 @@ Z2O_NOTE_GENERATOR="local"
 ```text
 your-vault/
 ├── assets/
-│   ├── pdfs/                  # 从 Zotero 复制出的 PDF
-│   └── png/                   # 从 PDF 提取出的图片和页面渲染
+│   └── ouyang2026reasoningbank/
+│       ├── ouyang2026reasoningbank.pdf
+│       ├── page1_img1.png
+│       └── page_1.png
 ├── papers/
 │   ├── index/                 # Obsidian Bases 索引
 │   └── notes/                 # 论文笔记，以 citekey 命名
@@ -308,7 +306,7 @@ your-vault/
 - 中文撰写，保留英文原标题
 - citekey 是唯一 ID，用于文件名、wikilink 和 frontmatter
 - 侧重研究动机和核心方法，适合大模型研究者
-- 图片引用 `Z2O_IMAGE_DIR/{citekey}/` 下的关键图或页面渲染，脚本会按笔记目录计算相对路径
+- 图片引用 `Z2O_ASSETS_DIR/{citekey}/` 下的关键图或页面渲染，脚本会按笔记目录计算相对路径
 
 ### 自定义
 

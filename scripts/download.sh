@@ -15,16 +15,17 @@ fi
 CITEKEY="$1"
 z2o_configure_paths "${2:-}"
 PYTHON_BIN="$(z2o_python_bin)"
+ASSETS_DIR="$Z2O_ASSETS_DIR_ABS"
 
 echo "📥 从 Zotero 获取论文 PDF: $CITEKEY"
 
 if [[ -n "${BBT_JSON_RPC_URL:-}" ]]; then
     "$PYTHON_BIN" "$SCRIPT_DIR/fetch_zotero_pdf.py" "$CITEKEY" "$Z2O_VAULT" \
-        --pdf-dir "$Z2O_PDF_DIR_ABS" \
+        --asset-dir "$ASSETS_DIR" \
         --cache-dir "$Z2O_TEMP_DIR_ABS" \
         --bbt-url "$BBT_JSON_RPC_URL"
 else
     "$PYTHON_BIN" "$SCRIPT_DIR/fetch_zotero_pdf.py" "$CITEKEY" "$Z2O_VAULT" \
-        --pdf-dir "$Z2O_PDF_DIR_ABS" \
+        --asset-dir "$ASSETS_DIR" \
         --cache-dir "$Z2O_TEMP_DIR_ABS"
 fi

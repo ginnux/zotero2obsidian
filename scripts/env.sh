@@ -59,6 +59,18 @@ z2o_join_path() {
     fi
 }
 
+z2o_paper_asset_dir() {
+    local citekey="$1"
+
+    printf '%s/%s\n' "${Z2O_ASSETS_DIR_ABS%/}" "$citekey"
+}
+
+z2o_paper_pdf_path() {
+    local citekey="$1"
+
+    printf '%s/%s.pdf\n' "$(z2o_paper_asset_dir "$citekey")" "$citekey"
+}
+
 z2o_configure_paths() {
     local vault_arg="${1:-}"
 
@@ -82,19 +94,17 @@ z2o_configure_paths() {
     Z2O_INDEX_DIR="${Z2O_INDEX_DIR:-papers/index}"
     Z2O_SUMMARY_DIR="${Z2O_SUMMARY_DIR:-knowledge/Summary}"
     Z2O_TEMP_DIR="${Z2O_TEMP_DIR:-.paper-cache}"
-    Z2O_PDF_DIR="${Z2O_PDF_DIR:-assets/pdfs}"
-    Z2O_IMAGE_DIR="${Z2O_IMAGE_DIR:-assets/png}"
+    Z2O_ASSETS_DIR="${Z2O_ASSETS_DIR:-assets}"
 
     export Z2O_NOTES_DIR Z2O_INDEX_DIR Z2O_SUMMARY_DIR
-    export Z2O_TEMP_DIR Z2O_PDF_DIR Z2O_IMAGE_DIR
+    export Z2O_TEMP_DIR Z2O_ASSETS_DIR
 
     Z2O_NOTES_DIR_ABS="$(z2o_path "$Z2O_VAULT" "$Z2O_NOTES_DIR")"
     Z2O_INDEX_DIR_ABS="$(z2o_path "$Z2O_VAULT" "$Z2O_INDEX_DIR")"
     Z2O_SUMMARY_DIR_ABS="$(z2o_path "$Z2O_VAULT" "$Z2O_SUMMARY_DIR")"
     Z2O_TEMP_DIR_ABS="$(z2o_path "$Z2O_VAULT" "$Z2O_TEMP_DIR")"
-    Z2O_PDF_DIR_ABS="$(z2o_path "$Z2O_VAULT" "$Z2O_PDF_DIR")"
-    Z2O_IMAGE_DIR_ABS="$(z2o_path "$Z2O_VAULT" "$Z2O_IMAGE_DIR")"
+    Z2O_ASSETS_DIR_ABS="$(z2o_path "$Z2O_VAULT" "$Z2O_ASSETS_DIR")"
 
     export Z2O_NOTES_DIR_ABS Z2O_INDEX_DIR_ABS Z2O_SUMMARY_DIR_ABS
-    export Z2O_TEMP_DIR_ABS Z2O_PDF_DIR_ABS Z2O_IMAGE_DIR_ABS
+    export Z2O_TEMP_DIR_ABS Z2O_ASSETS_DIR_ABS
 }

@@ -88,9 +88,14 @@ def main() -> int:
     parser.add_argument("citekey", help="Better BibTeX citekey")
     parser.add_argument("vault", help="Obsidian vault path")
     parser.add_argument(
+        "--asset-dir",
+        default="assets",
+        help="paper asset root, absolute or relative to vault; PDF is saved to {asset-dir}/{citekey}/{citekey}.pdf",
+    )
+    parser.add_argument(
         "--pdf-dir",
-        default="assets/pdfs",
-        help="PDF output directory, absolute or relative to vault",
+        default=None,
+        help="deprecated exact PDF output directory, absolute or relative to vault",
     )
     parser.add_argument(
         "--cache-dir",
@@ -111,9 +116,15 @@ def main() -> int:
         fail("citekey 会作为文件名使用，不能包含路径分隔符 / 或 \\")
 
     vault = Path(args.vault).expanduser().resolve()
-    pdf_dir = Path(args.pdf_dir).expanduser()
-    if not pdf_dir.is_absolute():
-        pdf_dir = vault / pdf_dir
+    if args.pdf_dir:
+        pdf_dir = Path(args.pdf_dir).expanduser()
+        if not pdf_dir.is_absolute():
+            pdf_dir = vault / pdf_dir
+    else:
+        asset_dir = Path(args.asset_dir).expanduser()
+        if not asset_dir.is_absolute():
+            asset_dir = vault / asset_dir
+        pdf_dir = asset_dir / citekey
     cache_dir = Path(args.cache_dir).expanduser()
     if not cache_dir.is_absolute():
         cache_dir = vault / cache_dir
