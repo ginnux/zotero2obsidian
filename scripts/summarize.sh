@@ -72,6 +72,8 @@ PROMPT=$(cat << PROMPTEOF
 6. 相关论文部分用 [[]] 双链格式
 7. frontmatter 中的 tags 要准确反映论文领域
 8. 文件名和内部引用以 citekey 为唯一 ID，不要假设论文一定来自 arXiv
+9. frontmatter 中使用 src_type: "zotero" 标记来源类型，不要写 source 字段
+10. frontmatter 不要默认写入 status: unread
 
 ## 可用图片文件：
 ${FIGURES}
@@ -89,10 +91,9 @@ title_zh: "论文中文标题"
 authors: [作者列表]
 year: 年份
 citekey: "${CITEKEY}"
-source: "zotero"
+src_type: "zotero"
 pdf: "${PDF_LINK}"
 tags: [标签]
-status: unread
 rating: 
 date_added: $(date +%Y-%m-%d)
 tldr: "一句话概括核心贡献"

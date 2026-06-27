@@ -23,13 +23,6 @@ frontmatter_line() {
     grep -m 1 "$pattern" "$file" 2>/dev/null || true
 }
 
-status_list() {
-    local status="$1"
-    grep -rl "status: $status" "$PAPERS_DIR" 2>/dev/null \
-        | while read -r f; do echo "- [[$(basename "$f" .md)]]"; done \
-        || true
-}
-
 PAPER_LIST=""
 for f in "$PAPERS_DIR"/*.md; do
     if [[ -f "$f" ]]; then
@@ -50,17 +43,6 @@ cat > "$INDEX_DIR/reading-list.md" << EOF
 
 ## 全部论文
 $(echo -e "$PAPER_LIST")
-
-## 按状态
-
-### 📖 待读
-$(status_list unread)
-
-### 📝 在读
-$(status_list reading)
-
-### ✅ 已读
-$(status_list done)
 EOF
 
 echo "✅ 索引已更新: $INDEX_DIR/"

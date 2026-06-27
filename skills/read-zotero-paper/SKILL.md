@@ -168,6 +168,8 @@ vault/
 - 不要自动调用 `codex exec`、`opencode`、`claude`、`cc` 等外部 LLM 命令
 - 如果提取文本过长，分段读取；至少覆盖 Abstract、Introduction、Method/Approach、Experiments、Limitations/Discussion、References 前的主要内容
 - 写入前先用 `rg` 或分段读取梳理论文 section、Figure/Table 标题和实验指标，再按下面模板组织成规范中文笔记
+- frontmatter 中使用 `src_type: "zotero"` 标记来源类型；不要写入 `source` 字段，也不要把 Zotero 缓存元数据里的 `"source": "zotero"` 照抄到笔记
+- frontmatter 不要默认写入 `status: unread`
 
 ### Step 4: 图片引用
 
@@ -204,10 +206,9 @@ title_zh: "论文中文翻译标题"
 authors: [作者1, 作者2, 作者3]
 year: 2026
 citekey: "ouyang2026reasoningbank"
-source: "zotero"
+src_type: "zotero"
 pdf: "{relative_path_to_assets_citekey}/ouyang2026reasoningbank.pdf"
 tags: [tag1, tag2, tag3]
-status: unread
 rating:
 tldr: "一句话概括核心贡献"
 date_added: YYYY-MM-DD

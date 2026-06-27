@@ -115,10 +115,9 @@ title_zh: ""
 authors: {yaml_list(authors)}
 year:
 citekey: {json.dumps(args.citekey, ensure_ascii=False)}
-source: "zotero"
+src_type: "zotero"
 pdf: {json.dumps(args.pdf_link, ensure_ascii=False)}
 tags: [paper, needs-review]
-status: unread
 rating:
 date_added: {today}
 tldr: {json.dumps(tldr, ensure_ascii=False)}
